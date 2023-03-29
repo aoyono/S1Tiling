@@ -29,7 +29,7 @@
 # =========================================================================
 
 """ This module contains the S1FileManager class"""
-
+import concurrent.futures
 import fnmatch
 from functools import partial
 import glob
@@ -221,17 +221,15 @@ def _parallel_download_and_extraction_of_products(dag, raw_directory, products, 
     log_queue = multiprocessing.Queue()
     log_queue_listener = logging.handlers.QueueListener(log_queue)
     dl_work = partial(_download_and_extract_one_product, dag, raw_directory)
-    with multiprocessing.Pool(nb_procs, mp_worker_config, [log_queue]) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=nb_procs) as executor:
         log_queue_listener.start()
         try:
-            for count, result in enumerate(pool.imap_unordered(dl_work, products), 1):
+            for count, result in enumerate(executor.map(dl_work, products), 1):
                 logger.info("%s correctly downloaded", result)
                 logger.info(' --> Downloading products for %s... %s%%', tile_name, count * 100. / len(products))
                 paths.append(result)
         finally:
-            pool.close()
-            pool.join()
-            log_queue_listener.stop()  # no context manager for QueueListener unfortunately
+            log_queue_listener.stop()
 
     # paths returns the list of .SAFE directories
     return paths
@@ -389,20 +387,13 @@ class S1FileManager:
                     sensorMode="IW"
                     )
             logger.info("%s remote S1 products returned in page %s: %s", len(page_products), page, page_products)
+            page_products = page_products.filter_latest_intersect(extent)
+            logger.info("%s Left after filtering for latest intersect", len(page_products))
             products += page_products
             page += 1
             if len(page_products) < searched_items_per_page:
                 break
         logger.info("%s remote S1 products found: %s", len(products), products)
-        ##for p in products:
-        ##    logger.debug("%s --> %s -- %s", p, p.provider, p.properties)
-
-        # First only keep "IW" sensor products with the expected polarisation
-        # -> This filter is required with eodag < v1.6, it's redundant w/ v1.6+
-        products = [p for p in products
-                if (    product_property(p, "sensorMode",       "") == "IW"
-                    and product_property(p, "polarizationMode", "") == dag_polarization_param)
-                ]
         logger.debug("%s remote S1 product(s) found and filtered (IW && %s): %s", len(products), polarization, products)
         if not products:  # no need to continue
             return []
@@ -448,8 +439,8 @@ class S1FileManager:
             return paths
 
         paths = _parallel_download_and_extraction_of_products(
-                dag, self.cfg.raw_directory, products, self.cfg.nb_download_processes,
-                tile_name)
+               dag, self.cfg.raw_directory, products, self.cfg.nb_download_processes,
+               tile_name)
         logger.info("Remote S1 products saved into %s", paths)
         return paths
 
@@ -680,7 +671,7 @@ class S1FileManager:
             for srtm_tile in srtm_layer:
                 srtm_footprint = srtm_tile.GetGeometryRef()
                 intersection = mgrs_footprint.Intersection(srtm_footprint)
-                if intersection.GetArea() > 0:
+                if intersection is not None and intersection.GetArea() > 0:
                     coverage = intersection.GetArea() / area
                     srtm_tiles.append((srtm_tile.GetField('id'), coverage))
             needed_srtm_tiles[tile] = srtm_tiles
