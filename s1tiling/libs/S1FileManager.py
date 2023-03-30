@@ -387,8 +387,6 @@ class S1FileManager:
                     sensorMode="IW"
                     )
             logger.info("%s remote S1 products returned in page %s: %s", len(page_products), page, page_products)
-            page_products = page_products.filter_latest_intersect(extent)
-            logger.info("%s Left after filtering for latest intersect", len(page_products))
             products += page_products
             page += 1
             if len(page_products) < searched_items_per_page:
