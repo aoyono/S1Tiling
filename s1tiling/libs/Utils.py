@@ -47,7 +47,11 @@ def get_relative_orbit(manifest):
     Returns the relative orbit number of the product.
     """
     root = ET.parse(manifest)
-    return int(root.find("metadataSection/metadataObject/metadataWrap/xmlData/{http://www.esa.int/safe/sentinel-1.0}orbitReference/{http://www.esa.int/safe/sentinel-1.0}relativeOrbitNumber").text)
+    return int(
+        root.find(
+            "metadataSection/metadataObject/metadataWrap/xmlData/{http://www.esa.int/safe/sentinel-1.0}orbitReference/{http://www.esa.int/safe/sentinel-1.0}relativeOrbitNumber"
+        ).text
+    )
 
 
 def get_origin(manifest):
@@ -62,11 +66,18 @@ def get_origin(manifest):
     with open(manifest, "r") as save_file:
         for line in save_file:
             if "<gml:coordinates>" in line:
-                coor = line.replace("                <gml:coordinates>", "")\
-                           .replace("</gml:coordinates>", "").split(" ")
-                coord = [(float(val.replace("\n", "").split(",")[0]),
-                          float(val.replace("\n", "")
-                                .split(",")[1]))for val in coor]
+                coor = (
+                    line.replace("                <gml:coordinates>", "")
+                    .replace("</gml:coordinates>", "")
+                    .split(" ")
+                )
+                coord = [
+                    (
+                        float(val.replace("\n", "").split(",")[0]),
+                        float(val.replace("\n", "").split(",")[1]),
+                    )
+                    for val in coor
+                ]
                 return coord[0], coord[1], coord[2], coord[3]
         raise Exception("Coordinates not found in " + str(manifest))
 
@@ -112,7 +123,7 @@ def get_tile_origin_intersect_by_s1(grid_path, image):
         tile_footprint = current_tile.GetGeometryRef()
         intersection = poly.Intersection(tile_footprint)
         if intersection.GetArea() != 0:
-            intersect_tile.append(current_tile.GetField('NAME'))
+            intersect_tile.append(current_tile.GetField("NAME"))
     return intersect_tile
 
 
@@ -222,8 +233,9 @@ class ExecutionTimer:
     with ExecutionTimer("the code", True) as t:
         Code_to_measure()
     """
+
     def __init__(self, text, do_measure):
-        self._text       = text
+        self._text = text
         self._do_measure = do_measure
 
     def __enter__(self):
@@ -283,10 +295,11 @@ class RedirectStdToLogger:
     This is a very simplified version tuned to answer S1Tiling needs.
     It also acts as a context manager.
     """
+
     def __init__(self, logger):
         self.__old_stdout = sys.stdout
         self.__old_stderr = sys.stderr
-        self.__logger     = logger
+        self.__logger = logger
         sys.stdout = RedirectStdToLogger.__StdOutErrAdapter(logger)
         sys.stderr = RedirectStdToLogger.__StdOutErrAdapter(logger, logging.ERROR)
 
@@ -302,16 +315,18 @@ class RedirectStdToLogger:
         """
         Internal adapter that redirects messages, initially sent to a file, to a logger.
         """
+
         def __init__(self, logger, mode=None):
-            self.__logger     = logger
-            self.__mode       = mode  # None => adapt DEBUG/INFO/ERROR/...
+            self.__logger = logger
+            self.__mode = mode  # None => adapt DEBUG/INFO/ERROR/...
             self.__last_level = mode  # None => adapt DEBUG/INFO/ERROR/...
-            self.__lvl_re     = re.compile(r'(\((DEBUG|INFO|WARNING|ERROR)\))')
-            self.__lvl_map    = {
-                    'DEBUG':   logging.DEBUG,
-                    'INFO':    logging.INFO,
-                    'WARNING': logging.WARNING,
-                    'ERROR':   logging.ERROR}
+            self.__lvl_re = re.compile(r"(\((DEBUG|INFO|WARNING|ERROR)\))")
+            self.__lvl_map = {
+                "DEBUG": logging.DEBUG,
+                "INFO": logging.INFO,
+                "WARNING": logging.WARNING,
+                "ERROR": logging.ERROR,
+            }
 
         def write(self, message):
             """
@@ -360,6 +375,7 @@ class TopologicalSorter:
     """
     Depth-first topological_sort implementation
     """
+
     def __init__(self, dag, fetch_successor_function=None):
         """
         constructor
@@ -367,9 +383,9 @@ class TopologicalSorter:
         self.__table = dag
         if fetch_successor_function:
             self.__successor_fetcher = fetch_successor_function
-            self.__successors        = self.__successors_lazy
+            self.__successors = self.__successors_lazy
         else:
-            self.__successors        = self.__successors_direct
+            self.__successors = self.__successors_direct
 
     def depth(self, start_nodes):
         results = []
@@ -389,19 +405,20 @@ class TopologicalSorter:
         # logging.debug('start_nodes: %s', start_nodes)
         for node in start_nodes:
             visited = visited_nodes.get(node, 0)
-            if   visited == 1:
-                continue # done
+            if visited == 1:
+                continue  # done
             elif visited == 2:
                 raise ValueError(f"Tsort: cyclic graph detected {node}")
-            visited_nodes[node] = 2 # visiting
+            visited_nodes[node] = 2  # visiting
             succs = self.__successors(node)
             try:
                 self.__recursive_depth_first(succs, results, visited_nodes)
             except ValueError as e:
                 # raise e.'>'.node
                 raise e
-            visited_nodes[node] = 1 # visited
+            visited_nodes[node] = 1  # visited
             results.append(node)
+
 
 def tsort(dag, start_nodes, fetch_successor_function=None):
     ts = TopologicalSorter(dag, fetch_successor_function)

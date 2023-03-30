@@ -34,6 +34,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 SCRIPTDIR = os.path.dirname(os.path.abspath(os.path.realpath(__file__)))
 
+
 def list_dirs(directory, pattern=None):
     """
     Efficient listing of sub-directories in requested directory.
@@ -53,25 +54,25 @@ def list_dirs(directory, pattern=None):
     return res
 
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: " + sys.argv[0] + " <root-directory>")
         sys.exit(1)
     root = sys.argv[1]
     dirs = list_dirs(root)
-    print('Loading templates from %s', (SCRIPTDIR+"/_static/html",))
+    print("Loading templates from %s", (SCRIPTDIR + "/_static/html",))
     env = Environment(
-            loader=FileSystemLoader(SCRIPTDIR+"/_static/html"),
-            autoescape=select_autoescape(['html', 'xml']),
-            trim_blocks=True, lstrip_blocks=True # don't add new line, keep indent
-            )
-    template = env.get_template('versions.html')
-    versions=natsorted([d.name for d in dirs])
+        loader=FileSystemLoader(SCRIPTDIR + "/_static/html"),
+        autoescape=select_autoescape(["html", "xml"]),
+        trim_blocks=True,
+        lstrip_blocks=True,  # don't add new line, keep indent
+    )
+    template = env.get_template("versions.html")
+    versions = natsorted([d.name for d in dirs])
     # print(template.render(versions=versions))
-    destfilename = root+'/versions.html'
+    destfilename = root + "/versions.html"
     for d in dirs:
-        destfilename = d.path + '/_static/html/versions.html'
+        destfilename = d.path + "/_static/html/versions.html"
         with open(destfilename, "w") as destfile:
             destfile.write(template.render(versions=versions))
         print("Version HTML menu saved into %s" % (destfilename,))

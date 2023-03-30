@@ -33,11 +33,11 @@ config = ConfigParser.SafeConfigParser()
 config.read(CFG)
 
 
-raw_directory = config.get('Paths', 'S1Images')
+raw_directory = config.get("Paths", "S1Images")
 
-output_preprocess = config.get('Paths', 'Output')
+output_preprocess = config.get("Paths", "Output")
 
-tiles_list = [s.strip() for s in config.get('Processing', 'Tiles').split(",")]
+tiles_list = [s.strip() for s in config.get("Processing", "Tiles").split(",")]
 try:
     os.remove(os.path.join("./jobs", "*.cfg"))
 except OSError:
@@ -49,7 +49,7 @@ for itile, tile in enumerate(tiles_list):
         os.mkdir("./jobs")
     config.set("Processing", "Tiles", tile)
     config.set("PEPS", "ROI_by_tiles", "ALL")
-    with open(cfgFilename, 'wb') as configfile:
+    with open(cfgFilename, "wb") as configfile:
         config.write(configfile)
     print(itile, " ", tile, "->", cfgFilename)
 with open("s1tiling.jobarray.template") as f:
