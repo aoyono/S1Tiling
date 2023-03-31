@@ -30,11 +30,15 @@
 
 import datetime
 import glob
+import logging
 import os
 from subprocess import Popen
 import pickle
 import time
 from osgeo import gdal
+
+
+logger = logging.getLogger("s1tiling.filtering")
 
 
 class S1FilteringProcessor:
@@ -44,7 +48,7 @@ class S1FilteringProcessor:
     def process(self, tile):
         """Main function for speckle filtering script"""
         directory = os.path.join(self.Cg_Cfg.output_preprocess, tile.upper())
-        print("Start speckle filtering: " + tile.upper())
+        logger.info("Start speckle filtering: %s", tile.upper())
         year_outcore_list = ["2019", "2018"]
         year_filter_list = ["2019", "2018"]
 
@@ -84,10 +88,8 @@ class S1FilteringProcessor:
             ):
                 filelist_s1asc.append(file_it)
 
-        print(filelist_s1des)
-        print()
-        print(filelist_s1asc)
-        print()
+        logger.info(filelist_s1des)
+        logger.info(filelist_s1asc)
 
         if self.Cg_Cfg.Reset_outcore:
             processed_files = []
@@ -181,19 +183,19 @@ class S1FilteringProcessor:
 
         title = "Compute outcore"
         nb_cmd = len(pids)
-        print(title + "... 0%")
+        logger.info(title + "... 0%")
         while len(pids) > 0:
-            for i, pid in enumerate(pids):
+            for i, pid in enumerate(pids, 1):
                 status = pid[0].poll()
                 if status:
-                    print("Error in pid #" + str(i) + " id = " + str(pid[0]))
-                    print(pid[1])
+                    logger.error("Error in process #%d pid = %d", i, pid[0])
+                    logger.error(pid[1])
                     del pids[i]
                     break
 
                 elif status == 0:
                     del pids[i]
-                    print(
+                    logger.info(
                         title
                         + "... "
                         + str(int((nb_cmd - len(pids)) * 100.0 / nb_cmd))
@@ -270,19 +272,19 @@ class S1FilteringProcessor:
 
         title = "Compute filtered images"
         nb_cmd = len(pids)
-        print(title + "... 0%")
+        logger.info(title + "... 0%")
         while len(pids) > 0:
             for i, pid in enumerate(pids):
                 status = pid[0].poll()
                 if status:
-                    print("Error in pid #" + str(i) + " id = " + str(pid[0]))
-                    print(pid[1])
+                    logger.error("Error in process #%d pid = %d", i, pid[0])
+                    logger.error(pid[1])
                     del pids[i]
                     break
 
                 elif status == 0:
                     del pids[i]
-                    print(
+                    logger.info(
                         title
                         + "... "
                         + str(int((nb_cmd - len(pids)) * 100.0 / nb_cmd))

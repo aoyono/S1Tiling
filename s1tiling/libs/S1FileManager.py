@@ -54,7 +54,7 @@ from .otbpipeline import mp_worker_config
 
 setup_logging(verbose=1)
 
-logger = logging.getLogger("s1tiling")
+logger = logging.getLogger("s1tiling.filemanager")
 
 
 class Layer:

@@ -55,6 +55,7 @@ Options:
 from __future__ import absolute_import, print_function, unicode_literals
 
 import logging
+import logging.config
 import os
 from pathlib import Path
 import sys
@@ -64,8 +65,6 @@ from distributed.scheduler import KilledWorker
 from dask.distributed import Client, LocalCluster
 
 from s1tiling.libs.S1FileManager import S1FileManager
-
-# from libs import S1FilteringProcessor
 from s1tiling.libs import Utils
 from s1tiling.libs.configuration import Configuration
 from s1tiling.libs.otbpipeline import FirstStep, PipelineDescriptionSequence
@@ -79,12 +78,10 @@ from s1tiling.libs.otbwrappers import (
     SmoothBorderMask,
 )
 from s1tiling.libs import exits
-
 # Graphs
 from s1tiling.libs.vis import SimpleComputationGraph
 
-logger = None
-# logger = logging.getLogger('s1tiling')
+logger = logging.getLogger('s1tiling.S1Processor')
 
 
 def remove_files(files):
@@ -343,6 +340,7 @@ def process_one_tile(
 
 def s1_process(
     config_opt,
+    logging_config_path=Path(__file__).parent / 'logging.conf.yaml',
     searched_items_per_page=20,
     dryrun=False,
     debug_otb=False,
@@ -364,13 +362,12 @@ def s1_process(
     """
     # The config_opt can be either the configuration filename or an already initialized configuration object
     if isinstance(config_opt, str):
-        config = Configuration(config_opt)
+        config = Configuration(config_opt, logging_config_path)
     else:
         config = config_opt
 
     os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(config.OTBThreads)
-    global logger
-    logger = logging.getLogger("s1tiling")
+
     with S1FileManager(config) as s1_file_manager:
         tiles_to_process = extract_tiles_to_process(config, s1_file_manager)
         if len(tiles_to_process) == 0:
@@ -435,8 +432,6 @@ def s1_process(
                 product_required=True,
             )
 
-        # filtering_processor = S1FilteringProcessor.S1FilteringProcessor(config)
-
         try:
             if not debug_otb:
                 clean_logs(config.log_config, config.nb_procs)
@@ -455,7 +450,6 @@ def s1_process(
             else:
                 client = None
 
-            log_level = lambda res: logging.INFO if bool(res) else logging.WARNING
             results = []
             for idx, tile_it in enumerate(tiles_to_process_checked):
                 with Utils.ExecutionTimer("Processing of tile " + tile_it, True):
@@ -488,7 +482,10 @@ def s1_process(
 
             if results:
                 for res in results:
-                    logger.log(log_level(res), " - %s", res)
+                    if res:
+                        logger.info(" - %s", res)
+                    else:
+                        logger.warning(" - %s", res)
             else:
                 logger.info(" -> Nothing has been executed")
 
@@ -564,7 +561,6 @@ def run(
         sys.exit(exits.TASK_FAILED)
 
 
-if (
-    __name__ == "__main__"
-):  # Required for Dask: https://github.com/dask/distributed/issues/2422
+# Required for Dask: https://github.com/dask/distributed/issues/2422
+if __name__ == "__main__":
     run()

@@ -49,7 +49,7 @@ from pympler import tracker  # , muppy
 import otbApplication as otb
 from . import Utils
 
-logger = logging.getLogger("s1tiling")
+logger = logging.getLogger("s1tiling.pipeline")
 
 
 def otb_version():

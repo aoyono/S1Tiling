@@ -53,7 +53,7 @@ from .otbpipeline import (
 from . import Utils
 from ..__meta__ import __version__
 
-logger = logging.getLogger("s1tiling")
+logger = logging.getLogger("s1tiling.wrappers")
 
 re_tiff = re.compile(r"\.tiff?$")
 
