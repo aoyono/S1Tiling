@@ -210,10 +210,14 @@ def _download_and_extract_one_product(dag, raw_directory, product):
         product,
     )  # because eodag'll clear product
     file = os.path.join(raw_directory, product.as_dict()["id"]) + ".zip"
-    path = dag.download(
-        product,  # EODAG will clear this variable
-        extract=True,  # Let's eodag do the job
-    )
+    try:
+        path = dag.download(
+            product,  # EODAG will clear this variable
+            extract=True,  # Let's eodag do the job
+        )
+    except Exception as e:
+        logger.warning("Error while downloading %s:\n%s", product, str(e))
+        return None
     logging.debug(ok_msg)
     if os.path.exists(file):
         try:
@@ -245,7 +249,8 @@ def _parallel_download_and_extraction_of_products(
                     tile_name,
                     count * 100.0 / len(products),
                 )
-                paths.append(result)
+                if result is not None:
+                    paths.append(result)
         finally:
             log_queue_listener.stop()
 
