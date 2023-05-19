@@ -534,7 +534,7 @@ class S1FileManager:
         logger.info("Remote S1 products saved into %s", paths)
         return paths
 
-    def download_images(self, searched_items_per_page, dryrun=False, tiles=None):
+    def download_images(self, searched_items_per_page, dryrun=False, tiles=None, max_items=None):
         """This method downloads the required images if download is True"""
         if not self.cfg.download:
             logger.info("Using images already downloaded, as per configuration request")
@@ -570,6 +570,7 @@ class S1FileManager:
                     self.cfg.polarisation,
                     searched_items_per_page=searched_items_per_page,
                     dryrun=dryrun,
+                    max_items=max_items,
                 )
         self._update_s1_img_list()
 

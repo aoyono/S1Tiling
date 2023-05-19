@@ -233,6 +233,7 @@ def process_one_tile(
     dryrun=False,
     do_watch_ram=False,
     debug_tasks=False,
+    max_items=None,
 ):
     """
     Process one S2 tile.
@@ -251,6 +252,7 @@ def process_one_tile(
                 tiles=tile_name,
                 searched_items_per_page=searched_items_per_page,
                 dryrun=dryrun,
+                max_items=max_items,
             )
     except BaseException as e:
         logger.exception("Cannot download S1 images associated to %s", tile_name)
@@ -347,6 +349,7 @@ def s1_process(
     watch_ram=False,
     debug_tasks=False,
     cache_before_ortho=False,
+    max_items=None,
 ):
     """
     On demand Ortho-rectification of Sentinel-1 data on Sentinel-2 grid.
@@ -465,6 +468,7 @@ def s1_process(
                         dryrun=dryrun,
                         do_watch_ram=watch_ram,
                         debug_tasks=debug_tasks,
+                        max_items=max_items,
                     )
                     results += res
 
