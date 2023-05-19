@@ -214,6 +214,7 @@ def _download_and_extract_one_product(dag, raw_directory, product):
         path = dag.download(
             product,  # EODAG will clear this variable
             extract=True,  # Let's eodag do the job
+            outputs_prefix=raw_directory,
         )
     except Exception as e:
         logger.warning("Error while downloading %s:\n%s", product, str(e))
@@ -411,6 +412,7 @@ class S1FileManager:
         polarization,
         searched_items_per_page,
         dryrun,
+        max_items=None,
     ):
         """
         Process with the call to eodag download.
@@ -450,9 +452,15 @@ class S1FileManager:
             )
             products += page_products
             page += 1
+            if max_items and len(products) >= max_items:
+                logger.info("Maximum number of items reached: %s", max_items)
+                break
             if len(page_products) < searched_items_per_page:
                 break
         logger.info("%s remote S1 products found: %s", len(products), products)
+        if max_items:
+            logger.info("Keep only the %s first products", max_items)
+            products = products[:max_items]
         logger.debug(
             "%s remote S1 product(s) found and filtered (IW && %s): %s",
             len(products),
