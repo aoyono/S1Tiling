@@ -57,6 +57,8 @@ from __future__ import absolute_import, print_function, unicode_literals
 import logging
 import logging.config
 import os
+import shlex
+import subprocess
 from pathlib import Path
 import sys
 
@@ -170,7 +172,7 @@ def check_tiles_to_process(tiles_to_process, s1_file_manager):
     return tiles_to_process_checked, needed_srtm_tiles
 
 
-def check_srtm_tiles(cfg, srtm_tiles_id, srtm_suffix=".hgt"):
+def check_srtm_tiles(cfg, srtm_tiles_id, srtm_suffix=".hgt", download_method="s3"):
     """
     Check the SRTM tiles exist on disk.
     """
@@ -178,9 +180,34 @@ def check_srtm_tiles(cfg, srtm_tiles_id, srtm_suffix=".hgt"):
     for srtm_tile in srtm_tiles_id:
         tile_path_hgt = Path(cfg.srtm, srtm_tile + srtm_suffix)
         if not tile_path_hgt.exists():
-            res = False
-            logger.critical("%s is missing!", tile_path_hgt)
+            try:
+                ok = download_srtm_tile(tile_path_hgt.name, tile_path_hgt.parent, method=download_method)
+            except Exception as e:
+                logger.warning(f"Downloading {tile_path_hgt.name} failed:\n{e}")
+                res = False
+                logger.critical("%s is missing!", tile_path_hgt)
+            else:
+                if not ok:
+                    res = False
+                    logger.critical("%s is missing!", tile_path_hgt)
     return res
+
+
+def download_srtm_tile(tile_name, destination, method="s3"):
+    if method == "s3":
+        bucket = os.environ["SRTM_S3_BUCKET"]
+        root = os.environ.get("SRTM_S3_FILE_PATH", f"")
+        if root:
+            root = root.lstrip("/")
+            path = f"{root.rstrip('/')}/{tile_name}"
+        else:
+            path = tile_name
+        subprocess.run(shlex.split(
+            f's3cmd get s3://{bucket}/{path} {destination / tile_name}'
+        ), check=True)
+        return True
+    logger.info(f"SRTM download method: {method} not yet supported")
+    return False
 
 
 def clean_logs(config, nb_workers):
